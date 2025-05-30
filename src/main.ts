@@ -4,7 +4,9 @@ import {
   PluginSettingTab,
   Setting,
   MarkdownPostProcessorContext,
+  Notice, // Add this import
 } from "obsidian";
+import { Neo4jConnection, ConnectionError } from './connection/Neo4jConnection'; 
 
 interface Neo4jSettings {
   boltUrl: string;
@@ -25,10 +27,14 @@ const DEFAULT_SETTINGS: Neo4jSettings = {
 };
 
 export default class Neo4jPlugin extends Plugin {
-  settings: Neo4jSettings;
+  settings!: Neo4jSettings;
+  private connectionManager!: Neo4jConnection;
 
   async onload() {
     await this.loadSettings();
+
+	// Initialize connection manager
+	this.connectionManager = new Neo4jConnection();
 
     // Add settings tab
     this.addSettingTab(new Neo4jSettingTab(this.app, this));
@@ -62,6 +68,30 @@ export default class Neo4jPlugin extends Plugin {
     // TODO: Implement query processing
     el.createEl("div", { text: "Neo4j query processor - Coming soon!" });
     el.createEl("pre", { text: source });
+  }
+
+  // Test database connection with current settings
+  async testConnection(): Promise<void> {
+    try {
+      const config = {
+        url: this.settings.boltUrl,
+        username: this.settings.username,
+        password: this.settings.password,
+        encrypted: this.settings.encrypted,
+        connectionTimeout: this.settings.connectionTimeout,
+        maxConnectionPoolSize: this.settings.maxConnectionPoolSize,
+      };
+      
+      await this.connectionManager.testConnection(config);
+      new Notice('✅ Neo4j connection successful!');
+    } catch (error) {
+      if (error instanceof ConnectionError) {
+        new Notice(`❌ Connection failed: ${error.message}`);
+      } else {
+        new Notice('❌ Connection test failed. Check console for details.');
+        console.error('[Neo4j Plugin] Unexpected error:', error);
+      }
+    }
   }
 }
 
@@ -129,6 +159,26 @@ class Neo4jSettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.encrypted = value;
             await this.plugin.saveSettings();
+          })
+      );
+	
+	new Setting(containerEl)
+      .setName("Test Connection")
+      .setDesc("Verify that the connection settings work")
+      .addButton((button) =>
+        button
+          .setButtonText("Test Connection")
+          .setCta()
+          .onClick(async () => {
+            button.setButtonText("Testing...");
+            button.setDisabled(true);
+            
+            try {
+              await this.plugin.testConnection();
+            } finally {
+              button.setButtonText("Test Connection");
+              button.setDisabled(false);
+            }
           })
       );
   }
