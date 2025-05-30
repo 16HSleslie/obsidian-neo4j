@@ -36,3 +36,32 @@
   height: 100%;
   color: var(--text-muted);
 }
+
+.neo4j-query-display {
+  background-color: var(--background-secondary);
+  padding: 8px;
+  border-radius: 4px;
+  font-family: var(--font-monospace);
+  font-size: 0.9em;
+  margin: 8px 0;
+  border: 1px solid var(--background-modifier-border);
+}
+
+.neo4j-results-area {
+  min-height: 100px;
+  padding: 8px;
+  background-color: var(--background-primary-alt);
+  border-radius: 4px;
+  margin-top: 8px;
+}
+
+.neo4j-ready-message {
+  color: var(--text-accent);
+  font-style: italic;
+  padding: 8px;
+}
+
+.neo4j-execute-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

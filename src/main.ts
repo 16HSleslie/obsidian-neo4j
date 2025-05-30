@@ -65,9 +65,109 @@ export default class Neo4jPlugin extends Plugin {
     el: HTMLElement,
     ctx: MarkdownPostProcessorContext
   ) {
-    // TODO: Implement query processing
-    el.createEl("div", { text: "Neo4j query processor - Coming soon!" });
-    el.createEl("pre", { text: source });
+    // Create container for our query interface
+	const container = el.createDiv({ cls: 'neo4j-graph-container'});
+
+	// Extract and clean the query
+	const query = this.extractQuery(source);
+
+	if (!query.trim()) {
+		container.createDiv({
+			cls: 'neo4j-error-message',
+			text: 'No Cypher query found. Please write a valid Cypher query.'
+		});
+		return;
+	}
+
+	// Create control section
+	const controls = container.createDiv({ cls: 'neo4j-query-container'});
+
+	// Add execute button
+	const executeButton = controls.createEl('button', {
+		cls: 'neo4j-execute-button',
+		text: 'Execute Query'
+	});
+
+	// Show the query that will be displayed
+	const queryDisplay = container.createEl('pre', {
+		text: `Query: ${query}`,
+		cls: 'neo4j-query-display'
+	});
+
+	// Add results area
+	const resultsArea = container.createDiv({ cls: 'neo4j-results-area' });
+
+	// Wire up the execute button
+	executeButton.addEventListener('click', async () => {
+		await this.executeQuery(query, resultsArea, executeButton);
+	});
+
+	console.log('[Neo4j Plugin] Code block processed, query extracted:', query);
+  }
+
+  private extractQuery(source: string): string {
+	const lines = source.split('\n')
+		.map(line => line.trim())
+		.filter(line => line.length > 0 && !line.startsWith('//') && !line.startsWith('#'))
+
+	return lines.join(' ').trim();
+  }
+
+  private async executeQuery(
+	query: string,
+	resultsArea: HTMLElement,
+	executeButton: HTMLButtonElement
+  ): Promise<void> {
+	const orginalText = executeButton.textContent;
+	executeButton.textContent = 'Executing...';
+	executeButton.disabled = true;
+
+	resultsArea.empty();
+
+	try {
+		const status = this.connectionManager.getConnectionStatus();
+		if (!status.connected) {
+			await this.connectToDatabase();
+		}
+
+		resultsArea.createDiv({
+			text: `Ready to execute: ${query}`,
+			cls: 'neo4j-ready-message'
+		});
+
+		new Notice('Query processing ready! (Execution coming next)');
+
+	} catch (error) {
+		if (error instanceof ConnectionError) {
+			resultsArea.createDiv({
+				cls: 'neo4j-connection-error',
+				text: `Connection error: ${error.message}`
+			});
+		} else {
+			resultsArea.createDiv({
+				cls: 'neo4j-error-message',
+				text: 'Query execution failed. Check console for details'
+			});
+			console.error('[Neo4j Plugin] Query execution error', error);
+		}
+	} finally {
+		executeButton.textContent = orginalText;
+		executeButton.disabled = false;
+	}
+  }
+
+  private async connectToDatabase(): Promise<void> {
+	const config = {
+		url: this.settings.boltUrl,
+		username: this.settings.username,
+		password: this.settings.password,
+		encrypted: this.settings.encrypted,
+		connectionTimeout: this.settings.connectionTimeout,
+		maxConnectionPoolSize: this.settings.maxConnectionPoolSize,
+	};
+	
+	await this.connectionManager.connect(config);
+	console.log('[Neo4j Plugin] Auto-connected to database');
   }
 
   // Test database connection with current settings
