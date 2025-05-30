@@ -11,14 +11,25 @@
     "importHelpers": true,
     "isolatedModules": true,
     "strictNullChecks": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
     "lib": [
+      "ES2021",
       "DOM",
       "ES5",
       "ES6",
       "ES7"
-    ]
+    ],
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "types": ["node", "jest"]
   },
   "include": [
-    "**/*.ts"
-  ]
+    "src/**/*.ts",
+    "tests/**/*.ts"
+  ],
+  "exclude": ["node_modules", "main.js"]
 }

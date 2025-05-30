@@ -3,7 +3,8 @@
     "parser": "@typescript-eslint/parser",
     "env": { "node": true },
     "plugins": [
-      "@typescript-eslint"
+      "@typescript-eslint",
+      "prettier"
     ],
     "extends": [
       "eslint:recommended",
@@ -11,13 +12,17 @@
       "plugin:@typescript-eslint/recommended"
     ], 
     "parserOptions": {
-        "sourceType": "module"
+        "emcaVersion": 2021,
+        "sourceType": "module",
+        "project": "./tsconfig.json"
     },
     "rules": {
       "no-unused-vars": "off",
-      "@typescript-eslint/no-unused-vars": ["error", { "args": "none" }],
-      "@typescript-eslint/ban-ts-comment": "off",
-      "no-prototype-builtins": "off",
-      "@typescript-eslint/no-empty-function": "off"
-    } 
+      "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/explicit-function-return-type": "off",
+      "@typescript-eslint/explicit-module-boundary-types": "off",
+      "prettier/prettier": "error"
+    },
+    "ignorePatterns": ["node_modules/", "main.js", "*.config.js", "*.config.mjs"]
   }
