@@ -6,7 +6,8 @@ import {
   MarkdownPostProcessorContext,
   Notice, // Add this import
 } from "obsidian";
-import { Neo4jConnection, ConnectionError } from './connection/Neo4jConnection'; 
+import { Neo4jConnection, ConnectionError } from './connection/Neo4jConnection';
+import { QueryProcessor, QueryError } from "./query/QueryProcessor";
 
 interface Neo4jSettings {
   boltUrl: string;
@@ -29,12 +30,14 @@ const DEFAULT_SETTINGS: Neo4jSettings = {
 export default class Neo4jPlugin extends Plugin {
   settings!: Neo4jSettings;
   private connectionManager!: Neo4jConnection;
+  private queryProcessor!: QueryProcessor;
 
   async onload() {
     await this.loadSettings();
 
-	// Initialize connection manager
+	// Initialize connection manager and query processor
 	this.connectionManager = new Neo4jConnection();
+	this.queryProcessor = new QueryProcessor(this.connectionManager);
 
     // Add settings tab
     this.addSettingTab(new Neo4jSettingTab(this.app, this));
@@ -113,6 +116,9 @@ export default class Neo4jPlugin extends Plugin {
 	return lines.join(' ').trim();
   }
 
+  /**
+   *  Execute a Cypher query and display results
+   */
   private async executeQuery(
 	query: string,
 	resultsArea: HTMLElement,
@@ -127,22 +133,33 @@ export default class Neo4jPlugin extends Plugin {
 	try {
 		const status = this.connectionManager.getConnectionStatus();
 		if (!status.connected) {
+			resultsArea.createDiv({
+				text: 'Connecting to database...',
+				cls: 'neo4j-loading'
+			});
+
+			// Try auto-connect using current settings
 			await this.connectToDatabase();
 		}
 
-		resultsArea.createDiv({
-			text: `Ready to execute: ${query}`,
-			cls: 'neo4j-ready-message'
-		});
+		const result = await this.queryProcessor.execute(query);
 
-		new Notice('Query processing ready! (Execution coming next)');
+		this.displayQueryResults(result, resultsArea);
 
 	} catch (error) {
+		// Handle execution errors
 		if (error instanceof ConnectionError) {
 			resultsArea.createDiv({
 				cls: 'neo4j-connection-error',
-				text: `Connection error: ${error.message}`
+				text: `Connection error: ${error.message}. Please check your settings.`
 			});
+			new Notice(`❌ Connection failed: ${error.message}`);
+		} else if (error instanceof QueryError) {
+			resultsArea.createDiv({
+				cls: 'neo4j-error-message',
+				text: `Query error: ${error.message}`
+			});
+			new Notice(`❌ Query failed: ${error.message}`);
 		} else {
 			resultsArea.createDiv({
 				cls: 'neo4j-error-message',
@@ -151,10 +168,77 @@ export default class Neo4jPlugin extends Plugin {
 			console.error('[Neo4j Plugin] Query execution error', error);
 		}
 	} finally {
+		// Restore button state
 		executeButton.textContent = orginalText;
 		executeButton.disabled = false;
 	}
   }
+
+  /**
+   * Display query results
+   */
+  private displayQueryResults(result: any, container: HTMLElement): void {
+	// Create summary section
+	const summaryDiv = container.createDiv({ cls: 'neo4j-results-summary' });
+	summaryDiv.createEl('h4', { text: 'Query Results' });
+	
+	const statsDiv = summaryDiv.createDiv({ cls: 'neo4j-stats' });
+	statsDiv.createSpan({ text: `📊 ${result.summary.nodeCount} nodes, ${result.summary.relationshipCount} relationships` });
+	statsDiv.createSpan({ text: `⏱️ Executed in ${result.summary.executionTime}ms` });
+
+	// Display raw data for now (we'll add graph visualization later)
+	if (result.data.nodes.length > 0) {
+		const nodesSection = container.createDiv({ cls: 'neo4j-nodes-section' });
+		nodesSection.createEl('h5', { text: 'Nodes:' });
+		
+		result.data.nodes.slice(0, 10).forEach((node: any, index: number) => {
+		const nodeDiv = nodesSection.createDiv({ cls: 'neo4j-node-item' });
+		nodeDiv.createSpan({ 
+			text: `${index + 1}. ${node.label} (ID: ${node.id})`,
+			cls: 'neo4j-node-label'
+		});
+		
+		if (Object.keys(node.properties).length > 0) {
+			const propsDiv = nodeDiv.createDiv({ cls: 'neo4j-properties' });
+			propsDiv.createSpan({ text: `Properties: ${JSON.stringify(node.properties)}` });
+		}
+		});
+		
+		if (result.data.nodes.length > 10) {
+		nodesSection.createDiv({ 
+			text: `... and ${result.data.nodes.length - 10} more nodes`,
+			cls: 'neo4j-more-items'
+		});
+		}
+	}
+
+	if (result.data.relationships.length > 0) {
+		const relsSection = container.createDiv({ cls: 'neo4j-relationships-section' });
+		relsSection.createEl('h5', { text: 'Relationships:' });
+		
+		result.data.relationships.slice(0, 5).forEach((rel: any, index: number) => {
+		const relDiv = relsSection.createDiv({ cls: 'neo4j-relationship-item' });
+		relDiv.createSpan({ 
+			text: `${index + 1}. ${rel.source} -[${rel.type}]-> ${rel.target}`,
+			cls: 'neo4j-relationship-label'
+		});
+		});
+		
+		if (result.data.relationships.length > 5) {
+		relsSection.createDiv({ 
+			text: `... and ${result.data.relationships.length - 5} more relationships`,
+			cls: 'neo4j-more-items'
+		});
+		}
+	}
+
+  if (result.data.nodes.length === 0 && result.data.relationships.length === 0) {
+    container.createDiv({
+      text: 'Query executed successfully but returned no graph data.',
+      cls: 'neo4j-no-results'
+    });
+  }
+}
 
   private async connectToDatabase(): Promise<void> {
 	const config = {
