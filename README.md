@@ -6,7 +6,8 @@ Query Neo4j from Obsidian notes.
 🚧 Early development - doesn't do anything yet
 
 ## Setup
-bashnpm install
+bash
+npm install
 npm run dev
 ./scripts/dev-setup.sh
 
