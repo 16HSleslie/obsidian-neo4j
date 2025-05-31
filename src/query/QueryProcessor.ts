@@ -1,7 +1,8 @@
 // src/query/QueryProcessor.ts
 import { Session } from 'neo4j-driver';
 import { Neo4jConnection, ConnectionError } from '../connection/Neo4jConnection';
-import { QueryResult, GraphData } from '../types';
+import { QueryResult, GraphData, EnhancedQueryResult, EnhancedGraphData } from '../types'; // Add EnhancedQueryResult and EnhancedGraphData
+
 
 /**
  * Custom error class for query execution issues
@@ -22,7 +23,7 @@ export class QueryProcessor {
   /**
    * Execute a Cypher query and return processed results
    */
-  async execute(query: string): Promise<QueryResult> {
+  async execute(query: string): Promise<EnhancedQueryResult> {
     console.log('[Neo4j Plugin] Executing query:', query);
     
     let session: Session | null = null;
@@ -94,15 +95,19 @@ export class QueryProcessor {
   /**
    * Process Neo4j query results into graph data structure
    */
-  private processResults(records: any[]): GraphData {
+  private processResults(records: any[]): EnhancedGraphData {
     const nodes: Map<string, any> = new Map();
     const relationships: any[] = [];
+    const scalarData: any[] = [];
 
     for (const record of records) {
+      const recordData: any = {};
+      let hasGraphData = false;
+
       // Process each field in the record
       record.keys.forEach((key: string) => {
         const value = record.get(key);
-        
+
         if (this.isNode(value)) {
           const nodeId = value.identity.toString();
           if (!nodes.has(nodeId)) {
@@ -113,6 +118,7 @@ export class QueryProcessor {
             });
           }
         } else if (this.isRelationship(value)) {
+          hasGraphData = true;
           relationships.push({
             id: value.identity.toString(),
             source: value.start.toString(),
@@ -152,14 +158,36 @@ export class QueryProcessor {
               properties: segment.relationship.properties || {}
             });
           });
+        } else {
+          recordData[key] = this.formatScalarValue(value);
         }
       });
+
+      if (!hasGraphData || Object.keys(recordData).length > 0) {
+        scalarData.push(recordData);
+      }
     }
 
     return {
       nodes: Array.from(nodes.values()),
-      relationships
+      relationships,
+      scalarData: scalarData.length > 0 ? scalarData : undefined
     };
+  }
+
+  private formatScalarValue(value: any): any {
+    // Handle Neo4j integers (which are objects)
+    if (value && typeof value === 'object' && 'low' in value && 'high' in value) {
+      return value.toNumber ? value.toNumber() : value.toString();
+    }
+    
+    // Handle arrays
+    if (Array.isArray(value)) {
+      return value.map(v => this.formatScalarValue(v));
+    }
+    
+    // Handle regular values
+    return value;
   }
 
   /**

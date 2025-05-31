@@ -39,3 +39,11 @@ export interface ConnectionConfig {
   maxConnectionPoolSize?: number;
   connectionTimeout?: number;
 }
+
+export interface EnhancedGraphData extends GraphData {
+  scalarData?: any[];
+}
+
+export interface EnhancedQueryResult extends QueryResult {
+  data: EnhancedGraphData;
+}

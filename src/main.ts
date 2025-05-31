@@ -178,67 +178,103 @@ export default class Neo4jPlugin extends Plugin {
    * Display query results
    */
   private displayQueryResults(result: any, container: HTMLElement): void {
-	// Create summary section
-	const summaryDiv = container.createDiv({ cls: 'neo4j-results-summary' });
-	summaryDiv.createEl('h4', { text: 'Query Results' });
-	
-	const statsDiv = summaryDiv.createDiv({ cls: 'neo4j-stats' });
-	statsDiv.createSpan({ text: `📊 ${result.summary.nodeCount} nodes, ${result.summary.relationshipCount} relationships` });
-	statsDiv.createSpan({ text: `⏱️ Executed in ${result.summary.executionTime}ms` });
+    // Create summary section
+    const summaryDiv = container.createDiv({ cls: 'neo4j-results-summary' });
+    summaryDiv.createEl('h4', { text: 'Query Results' });
+    
+    const statsDiv = summaryDiv.createDiv({ cls: 'neo4j-stats' });
+    statsDiv.createDiv({ text: `📊 ${result.summary.nodeCount} nodes, ${result.summary.relationshipCount} relationships` });
+    statsDiv.createDiv({ text: `⏱️ Executed in ${result.summary.executionTime}ms` });
+    
+    // Show scalar/tabular data if present
+    if (result.data.scalarData && result.data.scalarData.length > 0) {
+      this.displayTabularResults(result.data.scalarData, container);
+    }
 
-	// Display raw data for now (we'll add graph visualization later)
-	if (result.data.nodes.length > 0) {
-		const nodesSection = container.createDiv({ cls: 'neo4j-nodes-section' });
-		nodesSection.createEl('h5', { text: 'Nodes:' });
-		
-		result.data.nodes.slice(0, 10).forEach((node: any, index: number) => {
-		const nodeDiv = nodesSection.createDiv({ cls: 'neo4j-node-item' });
-		nodeDiv.createSpan({ 
-			text: `${index + 1}. ${node.label} (ID: ${node.id})`,
-			cls: 'neo4j-node-label'
-		});
-		
-		if (Object.keys(node.properties).length > 0) {
-			const propsDiv = nodeDiv.createDiv({ cls: 'neo4j-properties' });
-			propsDiv.createSpan({ text: `Properties: ${JSON.stringify(node.properties)}` });
-		}
-		});
-		
-		if (result.data.nodes.length > 10) {
-		nodesSection.createDiv({ 
-			text: `... and ${result.data.nodes.length - 10} more nodes`,
-			cls: 'neo4j-more-items'
-		});
-		}
-	}
+    // Display graph data if present
+    if (result.data.nodes.length > 0) {
+      const nodesSection = container.createDiv({ cls: 'neo4j-nodes-section' });
+      nodesSection.createEl('h5', { text: 'Nodes:' });
+      
+      result.data.nodes.slice(0, 20).forEach((node: any, index: number) => {
+        const nodeDiv = nodesSection.createDiv({ cls: 'neo4j-node-item' });
+        nodeDiv.createSpan({ 
+          text: `${index + 1}. ${node.label} (ID: ${node.id})`,
+          cls: 'neo4j-node-label'
+        });
+        
+        if (Object.keys(node.properties).length > 0) {
+          const propsDiv = nodeDiv.createDiv({ cls: 'neo4j-properties' });
+          propsDiv.createSpan({ text: `Properties: ${JSON.stringify(node.properties)}` });
+        }
+      });
+      
+      if (result.data.nodes.length > 20) {
+        nodesSection.createDiv({ 
+          text: `... and ${result.data.nodes.length - 20} more nodes`,
+          cls: 'neo4j-more-items'
+        });
+      }
+    }
 
-	if (result.data.relationships.length > 0) {
-		const relsSection = container.createDiv({ cls: 'neo4j-relationships-section' });
-		relsSection.createEl('h5', { text: 'Relationships:' });
-		
-		result.data.relationships.slice(0, 5).forEach((rel: any, index: number) => {
-		const relDiv = relsSection.createDiv({ cls: 'neo4j-relationship-item' });
-		relDiv.createSpan({ 
-			text: `${index + 1}. ${rel.source} -[${rel.type}]-> ${rel.target}`,
-			cls: 'neo4j-relationship-label'
-		});
-		});
-		
-		if (result.data.relationships.length > 5) {
-		relsSection.createDiv({ 
-			text: `... and ${result.data.relationships.length - 5} more relationships`,
-			cls: 'neo4j-more-items'
-		});
-		}
-	}
+    if (result.data.relationships.length > 0) {
+      const relsSection = container.createDiv({ cls: 'neo4j-relationships-section' });
+      relsSection.createEl('h5', { text: 'Relationships:' });
+      
+      result.data.relationships.slice(0, 10).forEach((rel: any, index: number) => {
+        const relDiv = relsSection.createDiv({ cls: 'neo4j-relationship-item' });
+        relDiv.createSpan({ 
+          text: `${index + 1}. ${rel.source} -[${rel.type}]-> ${rel.target}`,
+          cls: 'neo4j-relationship-label'
+        });
+      });
+      
+      if (result.data.relationships.length > 10) {
+        relsSection.createDiv({ 
+          text: `... and ${result.data.relationships.length - 10} more relationships`,
+          cls: 'neo4j-more-items'
+        });
+      }
+    }
 
-  if (result.data.nodes.length === 0 && result.data.relationships.length === 0) {
-    container.createDiv({
-      text: 'Query executed successfully but returned no graph data.',
-      cls: 'neo4j-no-results'
+    // Show message if no data at all
+    if (result.data.nodes.length === 0 && 
+        result.data.relationships.length === 0 && 
+        (!result.data.scalarData || result.data.scalarData.length === 0)) {
+      container.createDiv({
+        text: 'Query executed successfully but returned no data.',
+        cls: 'neo4j-no-results'
+      });
+    }
+  }
+
+  private displayTabularResults(scalarData: any[], container: HTMLElement): void {
+    const tableSection = container.createDiv({ cls: 'neo4j-table-section' });
+    tableSection.createEl('h5', { text: 'Results:' });
+    
+    if (scalarData.length === 0) return;
+    
+    // Create table
+    const table = tableSection.createEl('table', { cls: 'neo4j-results-table' });
+    
+    // Create header
+    const headers = Object.keys(scalarData[0]);
+    const headerRow = table.createEl('thead').createEl('tr');
+    headers.forEach(header => {
+      headerRow.createEl('th', { text: header });
+    });
+    
+    // Create body
+    const tbody = table.createEl('tbody');
+    scalarData.forEach(row => {
+      const tableRow = tbody.createEl('tr');
+      headers.forEach(header => {
+        const value = row[header];
+        const displayValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+        tableRow.createEl('td', { text: displayValue });
+      });
     });
   }
-}
 
   private async connectToDatabase(): Promise<void> {
 	const config = {

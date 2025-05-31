@@ -130,3 +130,35 @@
   font-style: italic;
   padding: 20px;
 }
+
+.neo4j-table-section {
+  margin: 12px 0;
+  padding: 8px;
+  border-left: 3px solid var(--text-accent);
+  background-color: var(--background-primary-alt);
+}
+
+.neo4j-results-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  font-size: 0.9em;
+}
+
+.neo4j-results-table th {
+  background-color: var(--background-secondary);
+  padding: 8px;
+  text-align: left;
+  border: 1px solid var(--background-modifier-border);
+  font-weight: 600;
+}
+
+.neo4j-results-table td {
+  padding: 6px 8px;
+  border: 1px solid var(--background-modifier-border);
+  background-color: var(--background-primary);
+}
+
+.neo4j-results-table tr:nth-child(even) td {
+  background-color: var(--background-secondary);
+}
