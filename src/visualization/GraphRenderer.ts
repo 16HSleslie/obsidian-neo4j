@@ -34,9 +34,7 @@ export class GraphRenderer {
     };
   }
 
-  /**
-   * Render graph data in the specified container
-   */
+  // Render graph data in the specified container
   render(container: HTMLElement, data: GraphData): void {
     console.log('[Neo4j Plugin] Rendering graph with', data.nodes.length, 'nodes and', data.relationships.length, 'relationships');
     
@@ -72,7 +70,6 @@ export class GraphRenderer {
       elements: elements,
       style: this.getDefaultStyle(),
       layout: this.getLayoutConfig(),
-      wheelSensitivity: 0.2,
       minZoom: 0.1,
       maxZoom: 3
     });
@@ -83,9 +80,7 @@ export class GraphRenderer {
     console.log('[Neo4j Plugin] Graph rendered successfully');
   }
 
-  /**
-   * Transform GraphData to Cytoscape format
-   */
+  // Transform GraphData to Cytoscape format
   private transformDataForCytoscape(data: GraphData): any[] {
     const elements: any[] = [];
 
@@ -120,9 +115,7 @@ export class GraphRenderer {
     return elements;
   }
 
-  /**
-   * Get display name for a node
-   */
+  // Get display name for a node
   private getNodeDisplayName(node: any): string {
     // Try to find a good display property
     const nameProps = ['name', 'title', 'label', 'id'];
@@ -137,27 +130,21 @@ export class GraphRenderer {
     return `${node.label}:${node.id}`;
   }
 
-  /**
-   * Get CSS classes for nodes based on their type
-   */
+  // Get CSS classes for nodes based on their type
   private getNodeClasses(node: any): string {
     const baseClass = 'neo4j-node';
     const typeClass = `neo4j-node-${node.label.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
     return `${baseClass} ${typeClass}`;
   }
 
-  /**
-   * Get CSS classes for edges based on their type
-   */
+  // Get CSS classes for edges based on their type
   private getEdgeClasses(rel: any): string {
     const baseClass = 'neo4j-edge';
     const typeClass = `neo4j-edge-${rel.type.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
     return `${baseClass} ${typeClass}`;
   }
 
-  /**
-   * Get default Cytoscape styling
-   */
+  // Get default Cytoscape styling
   private getDefaultStyle(): any[] {
     return [
       {
@@ -239,9 +226,7 @@ export class GraphRenderer {
     ];
   }
 
-  /**
-   * Get layout configuration
-   */
+  // Get layout configuration
   private getLayoutConfig(): any {
     if (this.config.layout === 'cose-bilkent') {
       return {
@@ -266,9 +251,7 @@ export class GraphRenderer {
     };
   }
 
-  /**
-   * Add interaction handlers
-   */
+  // Add interaction handlers
   private addInteractionHandlers(): void {
     if (!this.cy) return;
 
@@ -289,9 +272,7 @@ export class GraphRenderer {
     });
   }
 
-  /**
-   * Update the graph with new data
-   */
+  // Update the graph with new data
   update(data: GraphData): void {
     if (!this.cy) return;
     
@@ -301,9 +282,7 @@ export class GraphRenderer {
     this.cy.layout(this.getLayoutConfig()).run();
   }
 
-  /**
-   * Clean up resources
-   */
+  // Clean up resources
   destroy(): void {
     if (this.cy) {
       this.cy.destroy();
@@ -312,18 +291,14 @@ export class GraphRenderer {
     this.container = null;
   }
 
-  /**
-   * Fit the graph to the container
-   */
+  // Fit the graph to the container
   fit(): void {
     if (this.cy) {
       this.cy.fit();
     }
   }
 
-  /**
-   * Reset zoom to default
-   */
+  // Reset zoom to default
   resetZoom(): void {
     if (this.cy) {
       this.cy.zoom(1);

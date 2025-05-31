@@ -1,17 +1,12 @@
-// src/connection/Neo4jConnection.ts - Updated version
 import neo4j, { Driver, Session } from 'neo4j-driver';
 import { ConnectionConfig } from '../types';
 
-/**
- * Type guard to check if error is an Error instance
- */
+// Type guard to check if error is an Error instance
 function isError(error: unknown): error is Error {
   return error instanceof Error;
 }
 
-/**
- * Type guard to check if error has a code property (Neo4j errors)
- */
+// Type guard to check if error has a code property (Neo4j errors)
 function hasErrorCode(error: unknown): error is Error & { code: string } {
   return isError(error) && 'code' in error && typeof (error as any).code === 'string';
 }
@@ -34,9 +29,7 @@ export class Neo4jConnection {
   private config: ConnectionConfig | null = null;
   private isConnected: boolean = false;
 
-  /**
-   * Test if we can connect to the database (temporary connection)
-   */
+  // Test if we can connect to the database (temporary connection)
   async testConnection(config: ConnectionConfig): Promise<boolean> {
     console.log('[Neo4j Plugin] Testing connection to:', config.url);
     
@@ -72,9 +65,7 @@ export class Neo4jConnection {
     }
   }
 
-  /**
-   * Establish a persistent connection to the database
-   */
+  // Establish a persistent connection to the database
   async connect(config: ConnectionConfig): Promise<void> {
     if (this.isConnected && this.driver) {
       console.log('[Neo4j Plugin] Already connected');
@@ -116,9 +107,7 @@ export class Neo4jConnection {
     }
   }
 
-  /**
-   * Close the persistent connection
-   */
+  // Close the persistent connection
   async disconnect(): Promise<void> {
     if (this.driver) {
       console.log('[Neo4j Plugin] Closing connection');
@@ -134,9 +123,7 @@ export class Neo4jConnection {
     this.isConnected = false;
   }
 
-  /**
-   * Get the current connection status
-   */
+  // Get the current connection status
   getConnectionStatus(): { connected: boolean; url?: string } {
     return {
       connected: this.isConnected,
@@ -144,10 +131,7 @@ export class Neo4jConnection {
     };
   }
 
-  /**
-   * Get a session for query execution
-   * @throws ConnectionError if not connected
-   */
+  // Get a session for query execution throws ConnectionError if not connected
   getSession(): Session {
     if (!this.driver || !this.isConnected) {
       throw new ConnectionError('Not connected to database. Call connect() first.');

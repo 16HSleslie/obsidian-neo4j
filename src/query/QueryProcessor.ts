@@ -1,4 +1,3 @@
-// src/query/QueryProcessor.ts
 import { Session } from 'neo4j-driver';
 import { Neo4jConnection, ConnectionError } from '../connection/Neo4jConnection';
 import { QueryResult, GraphData, EnhancedQueryResult, EnhancedGraphData } from '../types'; // Add EnhancedQueryResult and EnhancedGraphData
@@ -20,9 +19,7 @@ export class QueryError extends Error {
 export class QueryProcessor {
   constructor(private connectionManager: Neo4jConnection) {}
 
-  /**
-   * Execute a Cypher query and return processed results
-   */
+  // Execute a Cypher query and return processed results
   async execute(query: string): Promise<EnhancedQueryResult> {
     console.log('[Neo4j Plugin] Executing query:', query);
     
@@ -92,9 +89,7 @@ export class QueryProcessor {
     }
   }
 
-  /**
-   * Process Neo4j query results into graph data structure
-   */
+  // Process Neo4j query results into graph data structure
   private processResults(records: any[]): EnhancedGraphData {
     const nodes: Map<string, any> = new Map();
     const relationships: any[] = [];
@@ -190,9 +185,7 @@ export class QueryProcessor {
     return value;
   }
 
-  /**
-   * Type guards for Neo4j result types
-   */
+  // Type guards for Neo4j result types
   private isNode(value: any): boolean {
     return value && typeof value === 'object' && 'labels' in value && 'properties' in value;
   }

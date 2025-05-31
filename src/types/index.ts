@@ -47,3 +47,6 @@ export interface EnhancedGraphData extends GraphData {
 export interface EnhancedQueryResult extends QueryResult {
   data: EnhancedGraphData;
 }
+
+export type { Neo4jSettings } from '../settings/SettingsManager';
+export { DEFAULT_SETTINGS } from '../settings/SettingsManager';
