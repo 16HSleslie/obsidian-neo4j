@@ -162,3 +162,70 @@
 .neo4j-results-table tr:nth-child(even) td {
   background-color: var(--background-secondary);
 }
+
+.neo4j-cytoscape-container {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background-color: var(--background-primary);
+}
+
+.neo4j-graph-section {
+  margin: 16px 0;
+  padding: 12px;
+  border: 2px solid var(--text-accent);
+  border-radius: 8px;
+  background-color: var(--background-primary-alt);
+}
+
+.neo4j-graph-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.neo4j-graph-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.neo4j-control-button {
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  border: 1px solid var(--background-modifier-border);
+  background-color: var(--background-secondary);
+}
+
+.neo4j-control-button:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.neo4j-graph-visualization {
+  margin-top: 8px;
+}
+
+.neo4j-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.neo4j-toggle-button {
+  padding: 2px 8px;
+  font-size: 0.8em;
+  border-radius: 3px;
+  cursor: pointer;
+  border: 1px solid var(--background-modifier-border);
+  background-color: var(--background-secondary);
+}
+
+.neo4j-no-graph-data {
+  text-align: center;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 40px 20px;
+  background-color: var(--background-secondary);
+  border-radius: 6px;
+}

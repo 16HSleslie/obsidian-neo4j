@@ -8,6 +8,7 @@ import {
 } from "obsidian";
 import { Neo4jConnection, ConnectionError } from './connection/Neo4jConnection';
 import { QueryProcessor, QueryError } from "./query/QueryProcessor";
+import { GraphRenderer } from './visualization/GraphRenderer';
 
 interface Neo4jSettings {
   boltUrl: string;
@@ -31,6 +32,7 @@ export default class Neo4jPlugin extends Plugin {
   settings!: Neo4jSettings;
   private connectionManager!: Neo4jConnection;
   private queryProcessor!: QueryProcessor;
+  private activeRenderers: Map<string, GraphRenderer> = new Map();
 
   async onload() {
     await this.loadSettings();
@@ -186,18 +188,32 @@ export default class Neo4jPlugin extends Plugin {
     statsDiv.createDiv({ text: `📊 ${result.summary.nodeCount} nodes, ${result.summary.relationshipCount} relationships` });
     statsDiv.createDiv({ text: `⏱️ Executed in ${result.summary.executionTime}ms` });
     
-    // Show scalar/tabular data if present
+    // Show tabular/scalar data if present
     if (result.data.scalarData && result.data.scalarData.length > 0) {
       this.displayTabularResults(result.data.scalarData, container);
     }
 
-    // Display graph data if present
+    // Show interactive graph if we have graph data
+    if (result.data.nodes.length > 0 || result.data.relationships.length > 0) {
+      this.displayGraphVisualization(result.data, container);
+    }
+
+    // Show detailed text results as backup/additional info
     if (result.data.nodes.length > 0) {
       const nodesSection = container.createDiv({ cls: 'neo4j-nodes-section' });
-      nodesSection.createEl('h5', { text: 'Nodes:' });
+      const nodesHeader = nodesSection.createDiv({ cls: 'neo4j-section-header' });
+      nodesHeader.createEl('h5', { text: 'Nodes (Details):' });
       
-      result.data.nodes.slice(0, 20).forEach((node: any, index: number) => {
-        const nodeDiv = nodesSection.createDiv({ cls: 'neo4j-node-item' });
+      // Add toggle button for collapsing/expanding
+      const toggleButton = nodesHeader.createEl('button', {
+        text: 'Hide',
+        cls: 'neo4j-toggle-button'
+      });
+      
+      const nodesContent = nodesSection.createDiv({ cls: 'neo4j-section-content' });
+      
+      result.data.nodes.slice(0, 10).forEach((node: any, index: number) => {
+        const nodeDiv = nodesContent.createDiv({ cls: 'neo4j-node-item' });
         nodeDiv.createSpan({ 
           text: `${index + 1}. ${node.label} (ID: ${node.id})`,
           cls: 'neo4j-node-label'
@@ -209,32 +225,20 @@ export default class Neo4jPlugin extends Plugin {
         }
       });
       
-      if (result.data.nodes.length > 20) {
-        nodesSection.createDiv({ 
-          text: `... and ${result.data.nodes.length - 20} more nodes`,
+      if (result.data.nodes.length > 10) {
+        nodesContent.createDiv({ 
+          text: `... and ${result.data.nodes.length - 10} more nodes`,
           cls: 'neo4j-more-items'
         });
       }
-    }
 
-    if (result.data.relationships.length > 0) {
-      const relsSection = container.createDiv({ cls: 'neo4j-relationships-section' });
-      relsSection.createEl('h5', { text: 'Relationships:' });
-      
-      result.data.relationships.slice(0, 10).forEach((rel: any, index: number) => {
-        const relDiv = relsSection.createDiv({ cls: 'neo4j-relationship-item' });
-        relDiv.createSpan({ 
-          text: `${index + 1}. ${rel.source} -[${rel.type}]-> ${rel.target}`,
-          cls: 'neo4j-relationship-label'
-        });
+      // Toggle functionality
+      let isVisible = true;
+      toggleButton.addEventListener('click', () => {
+        isVisible = !isVisible;
+        nodesContent.style.display = isVisible ? 'block' : 'none';
+        toggleButton.textContent = isVisible ? 'Hide' : 'Show';
       });
-      
-      if (result.data.relationships.length > 10) {
-        relsSection.createDiv({ 
-          text: `... and ${result.data.relationships.length - 10} more relationships`,
-          cls: 'neo4j-more-items'
-        });
-      }
     }
 
     // Show message if no data at all
@@ -244,6 +248,61 @@ export default class Neo4jPlugin extends Plugin {
       container.createDiv({
         text: 'Query executed successfully but returned no data.',
         cls: 'neo4j-no-results'
+      });
+    }
+  }
+
+  private displayGraphVisualization(data: any, container: HTMLElement): void {
+    const graphSection = container.createDiv({ cls: 'neo4j-graph-section' });
+    
+    // Create header with controls
+    const graphHeader = graphSection.createDiv({ cls: 'neo4j-graph-header' });
+    graphHeader.createEl('h5', { text: 'Interactive Graph:' });
+    
+    const controlsDiv = graphHeader.createDiv({ cls: 'neo4j-graph-controls' });
+    
+    // Add control buttons
+    const fitButton = controlsDiv.createEl('button', {
+      text: '🔍 Fit',
+      cls: 'neo4j-control-button'
+    });
+    
+    const resetButton = controlsDiv.createEl('button', {
+      text: '↻ Reset',
+      cls: 'neo4j-control-button'
+    });
+    
+    // Create graph container
+    const graphContainer = graphSection.createDiv({ cls: 'neo4j-graph-visualization' });
+    
+    // Generate unique ID for this renderer
+    const rendererId = `renderer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    try {
+      // Create and render graph
+      const renderer = new GraphRenderer({
+        height: 400,
+        layout: 'cose',
+        showLabels: true,
+        nodeSize: 30
+      });
+      
+      renderer.render(graphContainer, data);
+      
+      // Store renderer for cleanup
+      this.activeRenderers.set(rendererId, renderer);
+      
+      // Wire up control buttons
+      fitButton.addEventListener('click', () => renderer.fit());
+      resetButton.addEventListener('click', () => renderer.resetZoom());
+      
+      console.log('[Neo4j Plugin] Graph visualization created with ID:', rendererId);
+      
+    } catch (error) {
+      console.error('[Neo4j Plugin] Graph visualization error:', error);
+      graphContainer.createDiv({
+        text: 'Error creating graph visualization. Falling back to text display.',
+        cls: 'neo4j-error-message'
       });
     }
   }
