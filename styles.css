@@ -227,3 +227,62 @@
   background-color: var(--background-secondary);
   border-radius: 6px;
 }
+
+.neo4j-query-input-container {
+  margin: 8px 0;
+}
+
+.neo4j-query-label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: var(--text-normal);
+  font-size: 0.9em;
+}
+
+.neo4j-query-textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background-color: var(--background-primary);
+  color: var(--text-normal);
+  font-family: var(--font-monospace);
+  font-size: 0.9em;
+  resize: vertical;
+  line-height: 1.4;
+}
+
+.neo4j-query-textarea:focus {
+  outline: none;
+  border-color: var(--text-accent);
+  box-shadow: 0 0 0 2px var(--text-accent-hover);
+}
+
+.neo4j-query-textarea::placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.neo4j-reset-button {
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-normal);
+  margin-left: 8px;
+}
+
+.neo4j-reset-button:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+/* Update button container to handle multiple buttons */
+.neo4j-query-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: center;
+}

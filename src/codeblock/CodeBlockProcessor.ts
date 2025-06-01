@@ -29,9 +29,9 @@ export class CodeBlockProcessor {
     const container = el.createDiv({ cls: 'neo4j-graph-container' });
     
     // Extract and clean the query
-    const query = this.extractQuery(source);
+    const originalQuery = this.extractQuery(source);
     
-    if (!query.trim()) {
+    if (!originalQuery.trim()) {
       container.createDiv({ 
         cls: 'neo4j-error-message',
         text: 'No Cypher query found. Please write a valid Cypher query.' 
@@ -48,21 +48,70 @@ export class CodeBlockProcessor {
       text: 'Execute Query'
     });
 
-    // Show the query that will be executed
-    const queryDisplay = container.createEl('pre', {
-      text: `Query: ${query}`,
-      cls: 'neo4j-query-display'
+    // Add reset button to restore original query
+    const resetButton = controls.createEl('button', {
+      cls: 'neo4j-reset-button',
+      text: 'Reset'
     });
+
+    // Create editable query input (INSTEAD of the readonly pre element)
+    const queryInputContainer = container.createDiv({ cls: 'neo4j-query-input-container' });
+    queryInputContainer.createEl('label', { 
+      text: 'Cypher Query:', 
+      cls: 'neo4j-query-label' 
+    });
+    
+    const queryTextarea = queryInputContainer.createEl('textarea', {
+      cls: 'neo4j-query-textarea',
+      value: originalQuery
+    });
+    
+    // Configure textarea
+    queryTextarea.rows = Math.max(3, originalQuery.split('\n').length);
+    queryTextarea.placeholder = 'Enter your Cypher query here...';
 
     // Add results area
     const resultsArea = container.createDiv({ cls: 'neo4j-results-area' });
 
     // Wire up the execute button
     executeButton.addEventListener('click', async () => {
-      await this.executeQuery(query, resultsArea, executeButton);
+      const currentQuery = queryTextarea.value.trim();
+      if (!currentQuery) {
+        resultsArea.empty();
+        resultsArea.createDiv({
+          cls: 'neo4j-error-message',
+          text: 'Please enter a Cypher query to execute.'
+        });
+        return;
+      }
+      await this.executeQuery(currentQuery, resultsArea, executeButton);
     });
 
-    console.log('[Neo4j Plugin] Code block processed, query extracted:', query);
+    // Wire up the reset button
+    resetButton.addEventListener('click', () => {
+      queryTextarea.value = originalQuery;
+      queryTextarea.rows = Math.max(3, originalQuery.split('\n').length);
+      resultsArea.empty();
+    });
+
+    // Auto-resize textarea as user types
+    queryTextarea.addEventListener('input', () => {
+      const lines = queryTextarea.value.split('\n').length;
+      queryTextarea.rows = Math.max(3, Math.min(lines + 1, 15)); // Min 3, max 15 rows
+    });
+
+    // Add keyboard shortcut (Ctrl+Enter or Cmd+Enter to execute)
+    queryTextarea.addEventListener('keydown', async (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+        event.preventDefault();
+        const currentQuery = queryTextarea.value.trim();
+        if (currentQuery) {
+          await this.executeQuery(currentQuery, resultsArea, executeButton);
+        }
+      }
+    });
+
+    console.log('[Neo4j Plugin] Code block processed with editable query input');
   }
 
   // Extract Cypher query from code block source
